@@ -1,0 +1,97 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brand Research AI</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101522;color:#f4f6fb;font-family:Arial,sans-serif}
+main{max-width:850px;margin:65px auto;padding:22px}
+h1{font-size:34px;margin-bottom:8px}
+p{color:#aeb8ca;line-height:1.6}
+input,button{padding:15px;border-radius:9px;font-size:16px}
+input{width:100%;background:#202a3c;color:white;border:1px solid #46536a;margin:18px 0}
+button{background:#3478f6;color:white;border:0;font-weight:bold;cursor:pointer}
+button:disabled{opacity:.5}
+#status{margin:18px 0;color:#9ebcff}
+#report{white-space:pre-wrap;line-height:1.7;background:#1b2536;padding:20px;border-radius:12px;overflow-wrap:anywhere}
+a{color:#83b5ff}
+</style>
+</head>
+<body>
+<main>
+<h1>Brand Research AI</h1>
+<p>Research brand owners, founders, parent companies, directors, trademarks and Amazon presence.</p>
+
+<form id="form">
+<input id="brand" placeholder="Enter a brand name..." required maxlength="150">
+<button id="search" type="submit">Search Brand</button>
+</form>
+
+<div id="status"></div>
+<div id="report"></div>
+<div id="sources"></div>
+</main>
+
+<script>
+const form = document.getElementById("form");
+const statusBox = document.getElementById("status");
+const reportBox = document.getElementById("report");
+const sourcesBox = document.getElementById("sources");
+const searchButton = document.getElementById("search");
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const brand = document.getElementById("brand").value.trim();
+  if (!brand) return;
+
+  searchButton.disabled = true;
+  statusBox.textContent = "Researching brand... Please wait.";
+  reportBox.textContent = "";
+  sourcesBox.replaceChildren();
+
+  try {
+    const response = await fetch("/api/research", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({brand})
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) throw new Error(data.error || "Research failed.");
+
+    reportBox.textContent = data.report || "No report returned.";
+
+    const heading = document.createElement("h3");
+    heading.textContent = "Sources";
+    sourcesBox.appendChild(heading);
+
+    (data.sources || []).forEach(item => {
+      const citation = item.url_citation || {};
+      if (!citation.url) return;
+
+      const link = document.createElement("a");
+      link.href = citation.url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = citation.title || citation.url;
+
+      const paragraph = document.createElement("p");
+      paragraph.appendChild(link);
+      sourcesBox.appendChild(paragraph);
+    });
+
+    statusBox.textContent = "Research completed.";
+  } catch (error) {
+    statusBox.textContent = "Error: " + error.message;
+  } finally {
+    searchButton.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
